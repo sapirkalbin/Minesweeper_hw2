@@ -7,13 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4313DFC9225D2EDF00137A91 /* DifficultyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4313DFC8225D2EDF00137A91 /* DifficultyViewController.swift */; };
+		43A14304225D162E00CF8E58 /* DetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43A14303225D162E00CF8E58 /* DetailsViewController.swift */; };
+		43DDAB75224E05A800B19061 /* Board.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DDAB74224E05A800B19061 /* Board.swift */; };
 		43DEFC7222494BC500489634 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DEFC7122494BC500489634 /* AppDelegate.swift */; };
-		43DEFC7422494BC500489634 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DEFC7322494BC500489634 /* ViewController.swift */; };
+		43DEFC7422494BC500489634 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DEFC7322494BC500489634 /* GameViewController.swift */; };
 		43DEFC7722494BC500489634 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 43DEFC7522494BC500489634 /* Main.storyboard */; };
 		43DEFC7922494BCB00489634 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 43DEFC7822494BCB00489634 /* Assets.xcassets */; };
 		43DEFC7C22494BCB00489634 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 43DEFC7A22494BCB00489634 /* LaunchScreen.storyboard */; };
 		43DEFC8722494BCB00489634 /* MinesweeperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DEFC8622494BCB00489634 /* MinesweeperTests.swift */; };
 		43DEFC9222494BCB00489634 /* MinesweeperUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43DEFC9122494BCB00489634 /* MinesweeperUITests.swift */; };
+		43E4F0532252639400E5BA8E /* Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43E4F0522252639400E5BA8E /* Tile.swift */; };
+		43E4F0552252666E00E5BA8E /* GameDifficulty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43E4F0542252666E00E5BA8E /* GameDifficulty.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,9 +39,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4313DFC8225D2EDF00137A91 /* DifficultyViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DifficultyViewController.swift; sourceTree = "<group>"; };
+		43A14303225D162E00CF8E58 /* DetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailsViewController.swift; sourceTree = "<group>"; };
+		43DDAB74224E05A800B19061 /* Board.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Board.swift; sourceTree = "<group>"; };
 		43DEFC6E22494BC500489634 /* Minesweeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Minesweeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		43DEFC7122494BC500489634 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		43DEFC7322494BC500489634 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		43DEFC7322494BC500489634 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
 		43DEFC7622494BC500489634 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		43DEFC7822494BCB00489634 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		43DEFC7B22494BCB00489634 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -47,6 +55,8 @@
 		43DEFC8D22494BCB00489634 /* MinesweeperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MinesweeperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		43DEFC9122494BCB00489634 /* MinesweeperUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinesweeperUITests.swift; sourceTree = "<group>"; };
 		43DEFC9322494BCB00489634 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		43E4F0522252639400E5BA8E /* Tile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tile.swift; sourceTree = "<group>"; };
+		43E4F0542252666E00E5BA8E /* GameDifficulty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDifficulty.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,11 +108,16 @@
 			isa = PBXGroup;
 			children = (
 				43DEFC7122494BC500489634 /* AppDelegate.swift */,
-				43DEFC7322494BC500489634 /* ViewController.swift */,
+				43DEFC7322494BC500489634 /* GameViewController.swift */,
 				43DEFC7522494BC500489634 /* Main.storyboard */,
 				43DEFC7822494BCB00489634 /* Assets.xcassets */,
 				43DEFC7A22494BCB00489634 /* LaunchScreen.storyboard */,
 				43DEFC7D22494BCB00489634 /* Info.plist */,
+				43DDAB74224E05A800B19061 /* Board.swift */,
+				43E4F0522252639400E5BA8E /* Tile.swift */,
+				43E4F0542252666E00E5BA8E /* GameDifficulty.swift */,
+				43A14303225D162E00CF8E58 /* DetailsViewController.swift */,
+				4313DFC8225D2EDF00137A91 /* DifficultyViewController.swift */,
 			);
 			path = Minesweeper;
 			sourceTree = "<group>";
@@ -256,8 +271,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				43DEFC7422494BC500489634 /* ViewController.swift in Sources */,
+				43DEFC7422494BC500489634 /* GameViewController.swift in Sources */,
 				43DEFC7222494BC500489634 /* AppDelegate.swift in Sources */,
+				43DDAB75224E05A800B19061 /* Board.swift in Sources */,
+				4313DFC9225D2EDF00137A91 /* DifficultyViewController.swift in Sources */,
+				43E4F0532252639400E5BA8E /* Tile.swift in Sources */,
+				43E4F0552252666E00E5BA8E /* GameDifficulty.swift in Sources */,
+				43A14304225D162E00CF8E58 /* DetailsViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

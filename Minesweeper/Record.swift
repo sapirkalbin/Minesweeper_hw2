@@ -7,14 +7,15 @@
 //
 
 import Foundation
+import CoreLocation
 
 class Record {
     var nickname: String
     var score: String
-    var location: String
+    var location: CLLocation
     var difficulty: String
     
-    init(nickname: String, score: String, difficulty: String, location: String) {
+    init(nickname: String, score: String, difficulty: String, location: CLLocation) {
         self.nickname = nickname
         self.score = score
         self.difficulty = difficulty

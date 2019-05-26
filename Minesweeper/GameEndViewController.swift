@@ -12,6 +12,8 @@ class GameEndViewController: UIViewController {
     @IBOutlet weak var newRecordText: UILabel!
     @IBOutlet weak var messageLbl: UILabel!
     
+    var isHidden: Bool = true
+    
     @IBAction func retry(_ sender: Any) {
         let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
         let detailsViewController = storyBoard.instantiateViewController(withIdentifier: "DetailsViewController") as! DetailsViewController
@@ -40,6 +42,7 @@ class GameEndViewController: UIViewController {
         super.viewDidLoad()
         
         self.messageLbl.text = textMessage
+        newRecordText.isHidden = self.isHidden
 
     }
     
@@ -54,7 +57,7 @@ class GameEndViewController: UIViewController {
     func setMessage(string: String, newRecord: Bool)
     {
         textMessage = string
-        newRecordText.isHidden = newRecord
+        self.isHidden = !newRecord
     }
     
 }

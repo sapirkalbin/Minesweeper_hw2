@@ -436,6 +436,7 @@
                                     <segment title="Hard"/>
                                 </segments>
                                 <connections>
+                                    <action selector="changed:" destination="VBJ-gg-aAn" eventType="valueChanged" id="60h-qX-vCx"/>
                                     <action selector="difficultyChanged:" destination="VBJ-gg-aAn" eventType="valueChanged" id="L8o-hY-3Cg"/>
                                 </connections>
                             </segmentedControl>

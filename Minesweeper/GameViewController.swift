@@ -35,10 +35,10 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         ref = Database.database().reference()
-        getScores()
+        getScoresByDiff(difficulty: diff)
 
         self.locationManager.requestAlwaysAuthorization()
-        addNewHighscore()
+
         // For use in foreground
         self.locationManager.requestWhenInUseAuthorization()
         
@@ -57,7 +57,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
         textLbl.text = "\(nickname), You have \(minesToGo) mines to go!"
     }
     
-    func getScores() {
+    func getScoresByDiff(difficulty: String) {
     ref.child("scores").observeSingleEvent(of: .value, with: { (snapshot) in
         // Get user value
         
@@ -66,7 +66,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
             
             for child in array {
                 let snap = child as! DataSnapshot
-                if(snap.key as String == self.diff){
+                if(snap.key as String == difficulty){
                     if snap.value is NSArray {
                         let data:NSArray = snap.value as! NSArray
                         for i in 0...data.count - 1{
@@ -74,7 +74,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
                             let nickname: String = dictionary.value(forKey: "name") as! String
                             let score: String = dictionary.value(forKey: "score") as! String
                             
-                            self.scoresArray.append(Record(nickname: nickname, score: score, difficulty: self.diff, location:""))
+                            self.scoresArray.append(Record(nickname: nickname, score: score, difficulty: difficulty, location:CLLocation()))
                         }
                     }
                 }
@@ -321,7 +321,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     func addNewHighscore (){
-        self.ref.child("scores").child(diff).setValue(Record(nickname: nickname, score: timerLbl.text!, difficulty: diff, location: ""))
+        self.ref.child("scores").child(diff).setValue(Record(nickname: nickname, score: timerLbl.text!, difficulty: diff, location: CLLocation()))
         ResultsPage(isHighscore: true)
     }
 

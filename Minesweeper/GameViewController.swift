@@ -142,7 +142,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
     func FinishGameTimer() {
         myTimer.invalidate()
         gameEnd = true
-        finishGameTimer = Timer.scheduledTimer(timeInterval: 5, target: self,   selector: (#selector(self.finishGame)), userInfo: nil, repeats: true)
+        finishGameTimer = Timer.scheduledTimer(timeInterval: 2, target: self,   selector: (#selector(self.finishGame)), userInfo: nil, repeats: true)
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {

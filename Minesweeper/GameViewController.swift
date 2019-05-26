@@ -5,72 +5,165 @@
 //  Created by sapir kalbin on 25/03/2019.
 //  Copyright © 2019 sapir kalbin and eti okonsky. All rights reserved.
 
+import CoreLocation
 import UIKit
+import Firebase
 
-class GameViewController: UIViewController, UIGestureRecognizerDelegate{
-    @IBOutlet weak var feedbackLbl: UILabel!
-    @IBOutlet weak var textView: UITextView!
+class GameViewController: UIViewController, CLLocationManagerDelegate {
+    let locationManager = CLLocationManager()
+
+    @IBOutlet weak var minesColletcionView: UICollectionView!
     @IBOutlet weak var timerLbl: UILabel!
-    @IBOutlet weak var collectionView: UICollectionView!
-    private let sectionInsets = UIEdgeInsets(top: 4.0, left: 4.0, bottom: 0.0, right: 4.0);
+    @IBOutlet weak var textLbl: UILabel!
+    var ref: DatabaseReference!
 
-    var gameDiff: GameDifficulty?
-    var difficulty = ""
+    var difficultySize = 10
+    var totlaMinesNumber = 0
+    var minesNumber = 10
+    var minesToGo = 10
     var nickname = ""
-    var board: Board?
-    var minesToGo: Int = 5
-    var gameEnd = false
+    var diff = ""
+    var myTimer = Timer()
+    var finishGameTimer = Timer()
+    var scoresArray: [Record] = []
     var seconds = 0
     var minutes = 0
-
-    var timer = Timer()
-    var isTimerRunning = false
+    var minesweeperArray: [[Int]]!
+    var longest: Record!
     
-
     
-    @IBAction func handleLongPress(_ sender: UILongPressGestureRecognizer) {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        ref = Database.database().reference()
+        getScores()
+
+        self.locationManager.requestAlwaysAuthorization()
+        addNewHighscore()
+        // For use in foreground
+        self.locationManager.requestWhenInUseAuthorization()
         
-        if(sender.state == UIGestureRecognizer.State.began) {
-            let touchPoint = sender.location(in: collectionView);
-            guard let indexPath = collectionView.indexPathForItem(at: touchPoint) else { return; };
+        if CLLocationManager.locationServicesEnabled() {
+            locationManager.delegate = self
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.startUpdatingLocation()
+        }
+        
+        self.createNewGame()
+        
+        self.addLongPressGesture()
+        
+        runTimer()
+        
+        textLbl.text = "\(nickname), You have \(minesToGo) mines to go!"
+    }
+    
+    func getScores() {
+    ref.child("scores").observeSingleEvent(of: .value, with: { (snapshot) in
+        // Get user value
+        
+        if snapshot.exists() {
+            let array:NSArray = snapshot.children.allObjects as NSArray
             
-            if(board!.tiles[indexPath.count][indexPath.section].isMarked)
-            {
-                board?.tiles[indexPath.row][indexPath.section].isMarked = false
-                (collectionView.cellForItem(at: indexPath) as? MyCell)?.label.text = String(board!.tiles[indexPath.row][indexPath.section].minesAround)
-                minesToGo += 1
+            for child in array {
+                let snap = child as! DataSnapshot
+                if(snap.key as String == self.diff){
+                    if snap.value is NSArray {
+                        let data:NSArray = snap.value as! NSArray
+                        for i in 0...data.count - 1{
+                            let dictionary = data[i] as! NSDictionary
+                            let nickname: String = dictionary.value(forKey: "name") as! String
+                            let score: String = dictionary.value(forKey: "score") as! String
+                            
+                            self.scoresArray.append(Record(nickname: nickname, score: score, difficulty: self.diff, location:""))
+                        }
+                    }
+                }
             }
-            else
-            {
-                board?.tiles[indexPath.row][indexPath.section].isMarked = true
-                (collectionView.cellForItem(at: indexPath) as? MyCell)?.label.text = "F"
-                minesToGo -= 1
+        }
+
+    }) { (error) in
+        print(error.localizedDescription)
+    }
+}
+    
+    func checkIsHighscore() -> Bool {
+    if(scoresArray.count <= 10) {
+        return true
+    }
+    else {
+        self.longest = getLowestScore()
+        
+        let longestArr = longest.score.split{$0 == ":"}.map(String.init)
+        let min_l = Int(longestArr[0])!
+        let sec_l = Int(longestArr[1])!
+        
+        if(self.minutes < min_l){
+            return true
+        }
+        else if (self.minutes == min_l) {
+            if(self.seconds < sec_l) {
+                return true
             }
-            
-            textView.text = "\(nickname), You have \(minesToGo) mines to go!"
-            var modifiedCells = [IndexPath]();
-            modifiedCells.append(indexPath);
-            
-            notifyDataSetChanged(collectionView: collectionView, indexPathArr: modifiedCells);
-            
+        }
+        return false
         }
     }
     
-   
-    func notifyDataSetChanged(collectionView: UICollectionView, indexPathArr: [IndexPath]) {
-        collectionView.reloadItems(at: indexPathArr);
+    func getLowestScore() -> Record {
+        var longest: Record
+        longest = scoresArray[0]
+        
+        for score in self.scoresArray{
+            let scoreArr = score.score.split{$0 == ":"}.map(String.init)
+            var longestArr = longest.score.split{$0 == ":"}.map(String.init)
+
+            let min_l: String = longestArr[0]
+            let sec_l: String = longestArr[1]
+            let min_cur: String = scoreArr[0]
+            let sec_cur: String = scoreArr[1]
+
+            if(Int(min_l)! < Int(min_cur)!){
+                longest = score
+            }
+            else if (Int(min_l)! == Int(min_cur)!)
+            {
+                if(Int(sec_l)! < Int(sec_cur)!){
+                    longest = score
+                }
+            }
+        }
+        return longest
     }
     
     func runTimer() {
-        timer = Timer.scheduledTimer(timeInterval: 1, target: self,   selector: (#selector(self.updateTimer)), userInfo: nil, repeats: true)
+        myTimer = Timer.scheduledTimer(timeInterval: 1, target: self,   selector: (#selector(self.updateTimer)), userInfo: nil, repeats: true)
+    }
+    
+    func FinishGameTimer() {
+        myTimer.invalidate()
+        finishGameTimer = Timer.scheduledTimer(timeInterval: 5, target: self,   selector: (#selector(self.finishGame)), userInfo: nil, repeats: true)
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let locValue: CLLocationCoordinate2D = manager.location?.coordinate else { return }
+        print("locations = \(locValue.latitude) \(locValue.longitude)")
     }
     
     
+    @objc func finishGame() {
+        let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil);
+        let gameEndViewController = storyBoard.instantiateViewController(withIdentifier: "GameEndViewController") as! GameEndViewController;
+        gameEndViewController.setMessage(string: "You Lose!", newRecord: false)
+        finishGameTimer.invalidate()
+        self.present(gameEndViewController, animated: true, completion: nil);
+    }
+    
     @objc func updateTimer() {
         //hour worst case
-        var secondsToDisplay: String
-        var minutesToDisplay: String
-
+        guard let timer = timerLbl else {return}
+        var secondsToDisplay = String(seconds)
+        var minutesToDisplay = String(minutes)
+        
         seconds += 1
         
         if(seconds>59)
@@ -94,262 +187,431 @@ class GameViewController: UIViewController, UIGestureRecognizerDelegate{
         else
         {
             minutesToDisplay = "\(minutes)"
-
+            
         }
-        timerLbl.text = "\(minutesToDisplay):\(secondsToDisplay)"
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        
-        let gestureRecognizer = UITapGestureRecognizer(target: self, action: "handleTap:")
-        
-        gameDiff = getDiff()
-        board = Board(difficulty: gameDiff!)
-        minesToGo = gameDiff!.minesNumber
-        textView.text = "\(nickname), You have \(minesToGo) mines to go!"
-        
-        collectionView.delegate = self
-        collectionView.dataSource = self
-        
-        
-    }
-    
-    @objc func handleTap(gestureRecognizer: UIGestureRecognizer) {
-        performSegue(withIdentifier: "restartSegue", sender: self)
+        timer.text = "\(minutesToDisplay):\(secondsToDisplay)"
     }
     
     
+    func setDetails(nickname: String, difficulty: GameDifficulty) {
+        self.minesToGo = difficulty.minesNumber
+        self.difficultySize = difficulty.size
+        self.diff = difficulty.name
+        self.minesNumber = difficulty.minesNumber
+        self.nickname = nickname
+    }
     
-    
-    private func initMinesDebug()
-    {
-        guard let boards = board else {return}
-        guard let diff = gameDiff else {return}
+    private func createNewGame() {
+        self.setMines()
         
-        for i in 0..<diff.size.height-1
-        {
-            for j in 0..<diff.size.width-1
-            {
-                if boards.tiles[i][j].isMine
-                {
-                    (collectionView.cellForItem(at: IndexPath(row: i, section: j)) as? MyCell)?.label.text = "X"
-                }
+    }
+    
+    private func setMines() {
+        self.totlaMinesNumber = minesNumber
+        
+        minesweeperArray  = createZeroArray(with: difficultySize)
+        
+        while minesNumber > 0 {
+            
+            var coordinate = randomMineCoordinate()
+            
+            while minesweeperArray[coordinate.0][coordinate.1] == -1 {
+                
+                coordinate = randomMineCoordinate()
             }
+            
+            minesweeperArray[coordinate.0][coordinate.1] = -1
+            
+            minesNumber -= 1
+            
         }
-    }
-    
-    private func revealAllBoard()
-    {
-        guard let boards = board else {return}
-        guard let diff = gameDiff else {return}
         
-        for i in 0..<diff.size.height
-        {
-            for j in 0..<diff.size.width
-            {
-                if boards.tiles[i][j].isMine
-                {
-                    (collectionView.cellForItem(at: IndexPath(row: i, section: j)) as? MyCell)?.label.text = "X"
-                }
-                else
-                {
-                    (collectionView.cellForItem(at: IndexPath(row: i, section: j)) as? MyCell)?.label.text = "\(boards.tiles[i][j].minesAround)"
+        for rowIndex in 0 ..< minesweeperArray.count {
+            
+            for columnIndex in  0 ..< minesweeperArray[rowIndex].count {
+                
+                if minesweeperArray[rowIndex][columnIndex] == 0 {
+                    
+                    let sum = summaryMine(row: rowIndex, column: columnIndex)
+                    
+                    minesweeperArray[rowIndex][columnIndex] = sum
+                    
                 }
                 
             }
+            
         }
-    }
-    
-    private func initNumbers()
-    {
-        guard let diff = gameDiff else {return}
-        
-        for i in 0..<diff.size.height
+                print()
+        for rowIndex in 0..<minesweeperArray.count
         {
-            for j in 0..<diff.size.width
+            for columnIndex in  0..<minesweeperArray[ rowIndex ].count
             {
-                if !(board!.tiles[i][j].isMine)
-                {
-                    board!.tiles[i][j].minesAround = board!.getNumber(i: i, j: j)
-                }
+                let v = minesweeperArray[ rowIndex ][ columnIndex ]
+                print("\(v>=0 ? " ":"")\(v) " , terminator:"")
             }
+            print()
         }
+        print()
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    private func addLongPressGesture() {
         
-        //initMinesDebug()
-        initNumbers()
-        runTimer()
+        let gesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(gesture:)))
+        
+        self.minesColletcionView.addGestureRecognizer(gesture)
+        
     }
     
-    func getDiff() -> GameDifficulty
-    {
-        switch (difficulty) {
-        case "easy":
-            return GameDifficulty.Easy
-        case "normal":
-            return GameDifficulty.Normal
-        case "hard":
-            return GameDifficulty.Hard
-        default:
-            return GameDifficulty.Easy
-        }
+    private func createZeroArray(with dimesional: Int) -> [[Int]] {
+        
+        let zeroArray = Array(repeating: Array(repeating: 0, count: dimesional), count: dimesional)
+        
+        return zeroArray
+        
     }
     
-    func revealArea(x: Int, y: Int)
-    {
-        guard let diff = gameDiff else {return}
+    private func randomMineCoordinate() -> (Int,Int) {
         
-        var startCol: Int
-        var startRow: Int
-        var endCol: Int
-        var endRow: Int
+        let column = Int.random(in: 0 ..< difficultySize)
         
-        if x == 0
-        {
-            startRow = 0
-        }
-        else
-        {
-            startRow = x - 1
+        let row = Int.random(in: 0 ..< difficultySize)
+        
+        return (column, row)
+        
+    }
+    
+    private func summaryMine(row: Int, column: Int ) -> Int {
+        
+        var mineCount = 0
+        
+        let leftTop = (row - 1, column - 1)
+        let top = (row - 1, column)
+        let rightTop = (row - 1, column + 1)
+        
+        let left = (row, column - 1)
+        let right = (row, column + 1)
+        
+        let leftDown = (row + 1, column - 1)
+        let down = (row + 1, column)
+        let rightDown = (row + 1, column + 1)
+        
+        let eightPositions = [leftTop, top, rightTop, left, right, leftDown, down, rightDown]
+        
+        for (row, column) in eightPositions {
+            
+            if row >= 0 && row < difficultySize
+                && column >= 0 && column < difficultySize {
+                
+                if minesweeperArray[row][column] == -1 {
+                    
+                    mineCount += 1
+                    
+                }
+                
+            }
+            
         }
         
-        if y == 0
-        {
-            startCol = 0
-        }
-        else
-        {
-            startCol = y - 1
-        }
+        return mineCount
         
-        if y == diff.size.height-1
-        {
-            endRow = diff.size.height-1
-        }
-        else{
-            endRow = y + 1
-        }
-        if(y == diff.size.width-1)
-        {
-            endCol = diff.size.width-1
-        }
-        else
-        {
-            endCol = y + 1
-        }
-        
-        for i in startRow..<endRow+1
-        {
-            for j in startCol..<endCol+1
-            {
-                guard let boards = board else {return}
+    }
+    
+    func removeLowestHighscore(){
+    
+    }
+    
+    func addNewHighscore (){
+        self.ref.child("scores").child(diff).setValue(Record(nickname: nickname, score: timerLbl.text!, difficulty: diff, location: ""))
+        ResultsPage(isHighscore: true)
+    }
 
-                (collectionView.cellForItem(at: IndexPath(row: i, section: j)) as? MyCell)?.label.text = String(describing: "\(boards.tiles[i][j].minesAround)")
-                board?.tiles[i][j].isRevealed = true
-                if board!.isGameWon
-                {
-                    gameWon()
-                }
-                if(board?.tiles[i][j].minesAround == 0)
-                {
-                    revealArea(x: i, y: j)
-                }
-            }
-        }
+    
+    func revealBoard() {
+        
     }
     
-    func gameLose()
-    {
-    feedbackLbl.text = "YOU LOSE!"
-    feedbackLbl.isHidden = false
-    feedbackLbl.textColor = UIColor(red: 255, green: 0, blue: 0, alpha: 1)
-    revealAllBoard()
-    timer.invalidate()
-    }
-    
-    func gameWon()
-    {
-        feedbackLbl.text = "YOU WIN!"
-        feedbackLbl.isHidden = false
-        feedbackLbl.textColor = UIColor(red: 0, green: 255, blue: 0, alpha: 1)
+    func ResultsPage(isHighscore: Bool) {
+        let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil);
+        let gameEndViewController = storyBoard.instantiateViewController(withIdentifier: "GameEndViewController") as! GameEndViewController;
+        gameEndViewController.setMessage(string: "You Win!", newRecord: isHighscore)
+        self.present(gameEndViewController, animated: true, completion: nil);
     }
 }
 
-
-extension GameViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return gameDiff!.size.height
-    }
+extension GameViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return gameDiff!.size.width
+        
+        return self.difficultySize * self.difficultySize
+        
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MyCell", for: indexPath) as! MyCell
-        return cell
+        
+        if let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CustomCell", for: indexPath) as? CustomCell {
+            
+            let row = indexPath.row / self.difficultySize
+            
+            let column = indexPath.row - (self.difficultySize * row)
+            
+            cell.mineCount = self.minesweeperArray[row][column]
+            
+            // add a border
+            cell.layer.borderColor = UIColor.black.cgColor
+            
+            cell.layer.borderWidth = 1
+            
+            cell.backgroundColor = UIColor(red: 192.0/255.0, green: 192.0/255.0, blue: 192.0/255.0, alpha: 1)
+            
+            return cell
+            
+        }
+        
+        return UICollectionViewCell()
+        
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
-        let sizeOfBoard = CGFloat(gameDiff!.size.height);
-        //print("top: ", collectionView.adjustedContentInset.top);
-        let paddingSpace = sectionInsets.left * (sizeOfBoard + 1);
-        let availableWidth = collectionView.frame.width - paddingSpace;
-        let cellWidth = availableWidth / sizeOfBoard;
+        let cellWidth = collectionView.frame.width / CGFloat(difficultySize)
         
-        return CGSize(width: cellWidth, height: cellWidth);
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        //print("Width: ", collectionView.frame.width, " Height: ", collectionView.frame.height);
-        return sectionInsets;
+        let cellSize = CGSize(width: cellWidth, height: cellWidth)
+        
+        return cellSize
+        
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-        return sectionInsets.left;
+        return 0.0
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return sectionInsets.left;
-    }
-    
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        collectionView.deselectItem(at: indexPath, animated: true)
-        guard let boards = board else {return}
-        
-        if !gameEnd
-        {
-            if (boards.tiles[indexPath.row][indexPath.section].isMine)
-            {
-                gameLose()
-            }
-            else if(boards.tiles[indexPath.row][indexPath.section].minesAround == 0)
-            {
-                revealArea(x: indexPath.row, y: indexPath.section)
-            }
-            else
-            {
-                (collectionView.cellForItem(at: IndexPath(row: indexPath.row, section: indexPath.section)) as? MyCell)?.label.text = "\(boards.tiles[indexPath.row][indexPath.section].minesAround)"
-            }
-            boards.tiles[indexPath.row][indexPath.section].isRevealed = true
-            if board!.isGameWon
-            {
-                gameWon()
-            }
-        }
+        return 0.0
     }
     
 }
 
-class MyCell: UICollectionViewCell{
-    @IBOutlet weak var label: UILabel!
+
+extension GameViewController: UICollectionViewDelegate {
     
+    public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        let tapCoordinate = Coordinate(indexPath: indexPath, globalDimesional: self.difficultySize)
+        
+        let mineCount = self.minesweeperArray[tapCoordinate.row!][tapCoordinate.column!]
+        
+        
+        
+        if mineCount >= 0 {
+            guard let cell = collectionView.cellForItem(at: indexPath) as? CustomCell else { return }
+            
+            if !cell.flagIcon.isHidden
+            {
+                minesToGo += 1
+                textLbl.text = "\(nickname), You have \(minesToGo) mines to go!"
+            }
+            
+            self.mineSweep(collectionView, coordinate: tapCoordinate)
+            
+            self.checkSweep()
+            
+            return
+            
+        }
+        
+        guard let cell = collectionView.cellForItem(at: indexPath) as? CustomCell else { return }
+
+        cell.mineIcon.isHidden = false
+        
+        FinishGameTimer()
+        
+    }
+    
+    @objc func handleLongPress(gesture : UILongPressGestureRecognizer!) {
+        
+        if gesture.state == .ended { return }
+        
+        if gesture.state == .cancelled { return }
+        
+        if gesture.state == .changed { return }
+        
+        let p = gesture.location(in: self.minesColletcionView)
+        
+        if let indexPath = self.minesColletcionView.indexPathForItem(at: p) {
+            
+            guard let cell = self.minesColletcionView.cellForItem(at: indexPath) as? CustomCell else { return }
+            
+            if !cell.isSwept {
+                if(minesToGo > 0)
+                {
+                cell.flagIcon.isHidden.toggle()
+                if(cell.flagIcon.isHidden)
+                {
+                    minesToGo += 1
+                }
+                else
+                {
+                    minesToGo -= 1
+                }
+                
+                textLbl.text = "\(nickname), You have \(minesToGo) mines to go!"
+                }
+            }
+            
+        }
+        
+    }
+
+}
+
+extension GameViewController {
+    
+    private func mineSweep(_ collectionView: UICollectionView, coordinate: Coordinate, fromIndexPath: IndexPath? = nil) {
+        
+        guard let cell = collectionView.cellForItem(at: coordinate.indexPath!) as? CustomCell else { return }
+        
+        guard cell.isSwept == false else { return }
+        
+        guard let row = coordinate.row,
+            0 ..< self.difficultySize ~= row else { return }
+        
+        guard let column = coordinate.column,
+            0 ..< self.difficultySize ~= column else { return }
+        
+        cell.isSwept.toggle()
+        
+        let myMineCount = self.minesweeperArray[row][column]
+        
+        if myMineCount > 0 { return }
+        
+        if myMineCount == 0 {
+            
+            cell.layer.borderWidth = 0
+            
+            cell.mineBackView.backgroundColor = .darkGray
+            
+        }
+        
+        let leftTop = Coordinate(row: row - 1, column: column - 1, globalDimesional: self.difficultySize)
+        
+        let top = Coordinate(row: row - 1, column: column, globalDimesional: self.difficultySize)
+        
+        let rightTop = Coordinate(row: row - 1, column: column + 1, globalDimesional: self.difficultySize)
+        
+        let left = Coordinate(row: row, column: column - 1, globalDimesional: self.difficultySize)
+        
+        let right = Coordinate(row: row, column: column + 1, globalDimesional: self.difficultySize)
+        
+        let leftBottom = Coordinate(row: row + 1, column: column - 1, globalDimesional: self.difficultySize)
+        
+        let bottom = Coordinate(row: row + 1, column: column, globalDimesional: self.difficultySize)
+        
+        let rightBottom = Coordinate(row: row + 1, column: column + 1, globalDimesional: self.difficultySize)
+        
+        let surroundCoordinates = [leftTop, top, rightTop, left, right, leftBottom, bottom, rightBottom]
+        
+        if let fromIndexPath = fromIndexPath {
+            
+            let fromCoordinate = Coordinate(indexPath: fromIndexPath, globalDimesional: self.difficultySize)
+            
+            for surroundCoordinate in surroundCoordinates {
+                
+                if surroundCoordinate == fromCoordinate {
+                    
+                    continue
+                    
+                }
+                
+                self.mineSweep(collectionView, coordinate: surroundCoordinate, fromIndexPath: coordinate.indexPath!)
+                
+            }
+            
+        }
+        else {
+            
+            for surroundCoordinate in surroundCoordinates {
+                
+                self.mineSweep(collectionView, coordinate: surroundCoordinate, fromIndexPath: coordinate.indexPath!)
+                
+            }
+            
+        }
+        
+    }
+    
+    func checkSweep() {
+        
+        var sweptCount = 0
+        
+        let indexPaths = self.minesColletcionView.indexPathsForVisibleItems
+        
+        for indexPath in indexPaths {
+            
+            guard let cell = self.minesColletcionView.cellForItem(at: indexPath) as? CustomCell else { return }
+            
+            if cell.isSwept {
+                
+                sweptCount += 1
+                
+            }
+            
+        }
+        
+        let isOverCount = (difficultySize * difficultySize) - self.totlaMinesNumber
+        
+        if sweptCount == isOverCount {
+            let score = "\(minutes).\(seconds)"
+            
+            let defaults = UserDefaults.standard
+            if let numOfRecords = defaults.string(forKey: "numOfRecords") {
+                defaults.set(Int(numOfRecords)! + 1, forKey: "numOfRecords")
+                defaults.set("\(score)|\(Int(numOfRecords)! + 1)", forKey: "record\(Int(numOfRecords)! + 1)")
+            }
+            else
+            {
+                defaults.set("1", forKey: "numOfRecords")
+                defaults.set("score|name", forKey: "record1")
+            }
+            
+            if(self.checkIsHighscore()) {
+                removeLowestHighscore()
+                addNewHighscore()
+                
+            }
+            else {
+                ResultsPage(isHighscore: false)
+            }
+        }
+    }
+    
+    struct Coordinate: Equatable {
+        
+        var row: Int?
+        
+        var column: Int?
+        
+        var indexPath: IndexPath?
+        
+        init(indexPath: IndexPath, globalDimesional: Int) {
+            
+            self.row = indexPath.row / globalDimesional
+            
+            self.column = indexPath.row - (globalDimesional * self.row!)
+            
+            self.indexPath = indexPath
+            
+        }
+        
+        init(row: Int, column: Int, globalDimesional: Int) {
+            
+            self.row = row
+            
+            self.column = column
+            
+            self.indexPath = IndexPath(row: row * globalDimesional + column, section: 0)
+            
+        }
+        
+    }
     
 }

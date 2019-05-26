@@ -11,14 +11,25 @@ import Foundation
 enum GameDifficulty: String {
     case Easy, Normal, Hard
     
-    var size: (width: Int, height: Int) {
+    var name: String {
         switch self {
         case .Easy:
-            return (5, 5)
+            return "easy"
         case .Normal:
-            return (10, 10)
+            return "normal"
         case .Hard:
-            return (10, 10)
+            return "hard"
+        }
+    }
+    
+    var size: Int {
+        switch self {
+        case .Easy:
+            return 5
+        case .Normal:
+            return 10
+        case .Hard:
+            return 10
         }
     }
     

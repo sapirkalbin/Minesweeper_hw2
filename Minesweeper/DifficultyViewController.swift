@@ -9,48 +9,49 @@
 import UIKit
 
 class DifficultyViewController: UIViewController {
-    var difficulty = ""
+    var difficulty = GameDifficulty.Easy
     var nickname = ""
     
+    @IBOutlet var myView: UIView!
     @IBOutlet weak var easyBtn: UIButton!
     @IBOutlet weak var normalBtn: UIButton!
     @IBOutlet weak var hardBtn: UIButton!
     @IBAction func startGame(_ sender: Any) {
-        if(difficulty != "")
-        {
-            performSegue(withIdentifier: "diffSegue", sender: self)
-        }
+            let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+            let gameViewController = storyBoard.instantiateViewController(withIdentifier: "GameViewController") as! GameViewController
+            gameViewController.setDetails(nickname: nickname, difficulty: difficulty)
+            self.present(gameViewController, animated: true, completion: nil)
     }
     @IBAction func easyClick(_ sender: Any) {
-        difficulty = "easy"
-        easyBtn.backgroundColor = UIColor(red: 0, green: 112, blue: 211, alpha: 1)
-        normalBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
-        hardBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
+        difficulty = GameDifficulty.Easy
+        easyBtn.backgroundColor = UIColor(red: 255, green: 255, blue: 153, alpha: 1)
+        normalBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
+        hardBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
     }
     @IBAction func normalClick(_ sender: Any) {
-        difficulty = "normal"
-        easyBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
-        normalBtn.backgroundColor = UIColor(red: 0, green: 112, blue: 211, alpha: 1)
-        hardBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
+        difficulty = GameDifficulty.Normal
+        easyBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
+        normalBtn.backgroundColor = UIColor(red: 255, green: 255, blue: 153, alpha: 1)
+        hardBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
     }
     @IBAction func hardClick(_ sender: Any) {
-        difficulty = "hard"
-        easyBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
-        normalBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 1)
-        hardBtn.backgroundColor = UIColor(red: 0, green: 112, blue: 211, alpha: 1)
+        difficulty = GameDifficulty.Hard
+        easyBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
+        normalBtn.backgroundColor = UIColor(red: 170, green: 170, blue: 170, alpha: 0)
+        hardBtn.backgroundColor = UIColor(red: 255, green: 255, blue: 153, alpha: 1)
+    }
+    
+    func setNickname(nickname: String) {
+        self.nickname = nickname
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        myView.setGradientBackground(colorOne: Colors.red, colorTwo: Colors.orange)
 
         // Do any additional setup after loading the view.
     }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        let gameController = segue.destination as! GameViewController
-        gameController.nickname = nickname
-        gameController.difficulty = difficulty
-    }
+
 
     /*
     // MARK: - Navigation

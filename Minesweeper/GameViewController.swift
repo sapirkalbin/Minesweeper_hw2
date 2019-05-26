@@ -30,7 +30,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
     var minutes = 0
     var minesweeperArray: [[Int]]!
     var longest: Record!
-    
+    var gameEnd = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -141,6 +141,7 @@ class GameViewController: UIViewController, CLLocationManagerDelegate {
     
     func FinishGameTimer() {
         myTimer.invalidate()
+        gameEnd = true
         finishGameTimer = Timer.scheduledTimer(timeInterval: 5, target: self,   selector: (#selector(self.finishGame)), userInfo: nil, repeats: true)
     }
     
@@ -395,7 +396,8 @@ extension GameViewController: UICollectionViewDataSource, UICollectionViewDelega
 extension GameViewController: UICollectionViewDelegate {
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        
+        if(!gameEnd)
+        {
         let tapCoordinate = Coordinate(indexPath: indexPath, globalDimesional: self.difficultySize)
         
         let mineCount = self.minesweeperArray[tapCoordinate.row!][tapCoordinate.column!]
@@ -424,7 +426,7 @@ extension GameViewController: UICollectionViewDelegate {
         cell.mineIcon.isHidden = false
         
         FinishGameTimer()
-        
+        }
     }
     
     @objc func handleLongPress(gesture : UILongPressGestureRecognizer!) {

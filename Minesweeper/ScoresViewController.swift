@@ -11,6 +11,7 @@ import UIKit
 import Firebase
 
 class ScoresViewController: UIViewController {
+    @IBOutlet weak var tableView: UITableView!
     @IBAction func changed(_ sender: UISegmentedControl) {
         if(sender.titleForSegment(at: sender.selectedSegmentIndex) == "Easy")
         {
@@ -29,7 +30,6 @@ class ScoresViewController: UIViewController {
             getScoresByDiff(difficulty: "hard")
         }
         
-        //updateTable()
     }
     
     
@@ -39,6 +39,8 @@ class ScoresViewController: UIViewController {
     var scoresArray: [Record] = []
 
     @IBOutlet weak var locationMap: MKMapView!
+    
+    
     @IBAction func retry(_ sender: Any) {
         let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
         let detailsViewController = storyBoard.instantiateViewController(withIdentifier: "DetailsViewController") as! DetailsViewController
@@ -59,12 +61,16 @@ class ScoresViewController: UIViewController {
 
         self.mLocationManager.delegate = self
         self.mLocationManager.desiredAccuracy = kCLLocationAccuracyBest
-        checkLocationServices()
-
+        getScoresByDiff(difficulty: "easy")
         
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        checkLocationServices()
+    }
+    
     func getScoresByDiff(difficulty: String) {
+        scoresArray = []
         ref.child("scores").observeSingleEvent(of: .value, with: { (snapshot) in
             // Get user value
             
@@ -86,6 +92,7 @@ class ScoresViewController: UIViewController {
                         }
                     }
                 }
+                    self.tableView.reloadData()
             }
             
         }) { (error) in
@@ -111,6 +118,11 @@ class ScoresViewController: UIViewController {
         }
     }
     
+    func updateMap() {
+
+        
+    }
+    
     
     override func viewDidAppear(_ animated: Bool) {
         if (CLLocationManager.locationServicesEnabled())
@@ -125,10 +137,6 @@ class ScoresViewController: UIViewController {
         }
     }
     
-    func getAllScores()
-    {
-        recordsList.append(Record(nickname: "s", score: "s", difficulty: "GameDifficulty", location: CLLocation()))
-    }
 }
 
 extension ScoresViewController: CLLocationManagerDelegate {
@@ -156,11 +164,49 @@ extension ScoresViewController: CLLocationManagerDelegate {
         mLocationManager.stopUpdatingLocation()
     }
     
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location: CLLocationCoordinate2D = manager.location?.coordinate else { return }
+        // set the value of lat and long
+        var latitude = location.latitude
+        var longitude = location.longitude
+        
+    }
+    
     func locationManager(manager: CLLocationManager, didFailWithError error: NSError) {
         print("Failed to initialize GPS: ", error.description)
     }
-
+    
+    
 
 }
 
+extension ScoresViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return scoresArray.count;
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "scoresRow", for: indexPath) as! ScoresRow;
+        let cellData = scoresArray[indexPath.row];
+        cell.name.text = cellData.nickname
+        cell.score.text = cellData.score
+        
+        return cell;
+    }
+    
+}
+
+class ScoresRow: UITableViewCell {
+    
+    @IBOutlet weak var name: UILabel!
+    @IBOutlet weak var score: UILabel!
+    
+
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        ScoresViewController().updateMap()
+    }
+    
+}
 
